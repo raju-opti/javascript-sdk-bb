@@ -1,11 +1,15 @@
 import { 
   createBatchEventProcessor,
+  createForwardingEventProcessor,
   createInstance,
   createLogger,
   createOdpManager,
   createPollingProjectConfigManager,
+  createStaticProjectConfigManager,
   DebugLog
 } from '@optimizely/optimizely-sdk';
+
+import { datafile } from './datafile';
 
 export const testOptimizely = async () => {
   const optimizely = createInstance({
@@ -13,10 +17,14 @@ export const testOptimizely = async () => {
       sdkKey: '<>',
       autoUpdate: true,
     }),
+    // projectConfigManager: createStaticProjectConfigManager({
+    //   datafile,
+    // }),
     logger: createLogger({
       level: DebugLog
     }),
-    eventProcessor: createBatchEventProcessor(),
+    // eventProcessor: createBatchEventProcessor(),
+    // eventProcessor: createForwardingEventProcessor(),
     odpManager: createOdpManager()
   })
 
