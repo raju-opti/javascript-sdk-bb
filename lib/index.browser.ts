@@ -26,7 +26,7 @@ import { BrowserRequestHandler } from './utils/http_request_handler/request_hand
  * @return {Client|null} the Optimizely client object
  *                           null on error
  */
-export const createInstance = function(config: Config): Client | null {
+export const createInstance = function(config: Config): Client {
   const client = getOptimizelyInstance({
     ...config,
     requestHandler: new BrowserRequestHandler(),
@@ -45,7 +45,7 @@ export const createInstance = function(config: Config): Client | null {
   return client;
 };
 
-export const getSendBeaconEventDispatcher = (): EventDispatcher => {
+export const getSendBeaconEventDispatcher = (): EventDispatcher | undefined => {
   return sendBeaconEventDispatcher;
 };
 

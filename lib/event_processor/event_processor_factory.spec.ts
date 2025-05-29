@@ -1,5 +1,5 @@
 /**
- * Copyright 2024, Optimizely
+ * Copyright 2024-2025, Optimizely
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,91 @@ describe('getBatchEventProcessor', () => {
     MockBatchEventProcessor.mockReset();
     MockExponentialBackoff.mockReset();
     MockIntervalRepeater.mockReset();
+  });
+
+  it('should throw an error if provided eventDispatcher is not valid', () => {
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: undefined as any,
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+    })).toThrow('Invalid event dispatcher');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: null as any,
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+    })).toThrow('Invalid event dispatcher');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: 'abc' as any,
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+    })).toThrow('Invalid event dispatcher');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: {} as any,
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+    })).toThrow('Invalid event dispatcher');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: { dispatchEvent: 'abc' } as any,
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+    })).toThrow('Invalid event dispatcher');
+  });
+
+  it('should throw and error if provided event store is invalid', () => {
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: getMockEventDispatcher(),
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+      eventStore: 'abc' as any,
+    })).toThrow('Invalid store');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: getMockEventDispatcher(),
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+      eventStore: 123 as any,
+    })).toThrow('Invalid store');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: getMockEventDispatcher(),
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+      eventStore: {} as any,
+    })).toThrow('Invalid store method set, Invalid store method get, Invalid store method remove, Invalid store method getKeys');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: getMockEventDispatcher(),
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+      eventStore: { set: 'abc', get: 'abc', remove: 'abc', getKeys: 'abc' } as any,
+    })).toThrow('Invalid store method set, Invalid store method get, Invalid store method remove, Invalid store method getKeys');
+
+    const noop = () => {};
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: getMockEventDispatcher(),
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+      eventStore: { set: noop, get: 'abc' } as any,
+    })).toThrow('Invalid store method get, Invalid store method remove, Invalid store method getKeys');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: getMockEventDispatcher(),
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+      eventStore: { set: noop, get: noop, remove: 'abc' } as any,
+    })).toThrow('Invalid store method remove, Invalid store method getKeys');
+
+    expect(() => getBatchEventProcessor({
+      eventDispatcher: getMockEventDispatcher(),
+      defaultFlushInterval: 10000,
+      defaultBatchSize: 10,
+      eventStore: { set: noop, get: noop, remove: noop, getKeys: 'abc' } as any,
+    })).toThrow('Invalid store method getKeys');
   });
 
   it('returns an instane of BatchEventProcessor if no subclass constructor is provided', () => {
@@ -83,24 +168,8 @@ describe('getBatchEventProcessor', () => {
     expect(MockBatchEventProcessor.mock.calls[0][0].retryConfig).toBe(undefined);
   });
 
-  it('uses retry when retryOptions is provided', () => {
-    const options = {
-      eventDispatcher: getMockEventDispatcher(),
-      retryOptions: {},
-      defaultFlushInterval: 1000,
-      defaultBatchSize: 10,
-    };
-
-    const processor = getBatchEventProcessor(options);
-
-    expect(Object.is(processor, MockBatchEventProcessor.mock.instances[0])).toBe(true);
-    const usedRetryConfig = MockBatchEventProcessor.mock.calls[0][0].retryConfig;
-    expect(usedRetryConfig).not.toBe(undefined);
-    expect(usedRetryConfig?.backoffProvider).not.toBe(undefined);
-  });
-
   it('uses the correct maxRetries value when retryOptions is provided', () => {
-    const options1 = {
+    const options = {
       eventDispatcher: getMockEventDispatcher(),
       defaultFlushInterval: 1000,
       defaultBatchSize: 10,
@@ -109,21 +178,9 @@ describe('getBatchEventProcessor', () => {
       },
     };
 
-    const processor1 = getBatchEventProcessor(options1);
-    expect(Object.is(processor1, MockBatchEventProcessor.mock.instances[0])).toBe(true);
+    const processor = getBatchEventProcessor(options);
+    expect(Object.is(processor, MockBatchEventProcessor.mock.instances[0])).toBe(true);
     expect(MockBatchEventProcessor.mock.calls[0][0].retryConfig?.maxRetries).toBe(10);
-
-    const options2 = {
-      eventDispatcher: getMockEventDispatcher(),
-      defaultFlushInterval: 1000,
-      defaultBatchSize: 10,
-      retryOptions: {},
-    };
-
-    const processor2 = getBatchEventProcessor(options2);
-    expect(Object.is(processor2, MockBatchEventProcessor.mock.instances[1])).toBe(true);
-    expect(MockBatchEventProcessor.mock.calls[0][0].retryConfig).not.toBe(undefined);
-    expect(MockBatchEventProcessor.mock.calls[1][0].retryConfig?.maxRetries).toBe(undefined);
   });
 
   it('uses exponential backoff with default parameters when retryOptions is provided without backoff values', () => {
@@ -131,11 +188,13 @@ describe('getBatchEventProcessor', () => {
       eventDispatcher: getMockEventDispatcher(),
       defaultFlushInterval: 1000,
       defaultBatchSize: 10,
-      retryOptions: {},
+      retryOptions: { maxRetries: 2 },
     };
 
     const processor = getBatchEventProcessor(options);
     expect(Object.is(processor, MockBatchEventProcessor.mock.instances[0])).toBe(true);
+
+    expect(MockBatchEventProcessor.mock.calls[0][0].retryConfig?.maxRetries).toBe(2);
 
     const backoffProvider = MockBatchEventProcessor.mock.calls[0][0].retryConfig?.backoffProvider;
     expect(backoffProvider).not.toBe(undefined);
@@ -149,11 +208,14 @@ describe('getBatchEventProcessor', () => {
       eventDispatcher: getMockEventDispatcher(),
       defaultFlushInterval: 1000,
       defaultBatchSize: 10,
-      retryOptions: { minBackoff: 1000, maxBackoff: 2000 },
+      retryOptions: { maxRetries: 2, minBackoff: 1000, maxBackoff: 2000 },
     };
 
     const processor = getBatchEventProcessor(options);
     expect(Object.is(processor, MockBatchEventProcessor.mock.instances[0])).toBe(true);
+
+    expect(MockBatchEventProcessor.mock.calls[0][0].retryConfig?.maxRetries).toBe(2);
+    
     const backoffProvider = MockBatchEventProcessor.mock.calls[0][0].retryConfig?.backoffProvider;
 
     expect(backoffProvider).not.toBe(undefined);

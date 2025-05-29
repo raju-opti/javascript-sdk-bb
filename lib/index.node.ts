@@ -25,7 +25,7 @@ import { NodeRequestHandler } from './utils/http_request_handler/request_handler
  * @return {Client|null} the Optimizely client object
  *                           null on error
  */
-export const createInstance = function(config: Config): Client | null {
+export const createInstance = function(config: Config): Client {
   const nodeConfig = {
     ...config,
     clientEnging: config.clientEngine || NODE_CLIENT_ENGINE,
@@ -35,8 +35,8 @@ export const createInstance = function(config: Config): Client | null {
   return getOptimizelyInstance(nodeConfig);
 };
 
-export const getSendBeaconEventDispatcher = function(): EventDispatcher {
-  throw new Error('Send beacon event dispatcher is not supported in NodeJS');
+export const getSendBeaconEventDispatcher = function(): EventDispatcher | undefined {
+  return undefined;
 };
 
 export { default as eventDispatcher } from './event_processor/event_dispatcher/default_dispatcher.node';

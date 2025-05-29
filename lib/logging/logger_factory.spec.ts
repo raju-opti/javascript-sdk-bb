@@ -25,10 +25,10 @@ vi.mock('./logger', async (importOriginal) => {
 });
 
 import { OptimizelyLogger, ConsoleLogHandler, LogLevel } from './logger';
-import { createLogger, extractLogger, InfoLog } from './logger_factory';
+import { createLogger, extractLogger, INFO } from './logger_factory';
 import { errorResolver, infoResolver } from '../message/message_resolver';
 
-describe('create', () => {
+describe('createLogger', () => {
   const MockedOptimizelyLogger = vi.mocked(OptimizelyLogger);
   const MockedConsoleLogHandler = vi.mocked(ConsoleLogHandler);
 
@@ -37,11 +37,50 @@ describe('create', () => {
     MockedOptimizelyLogger.mockClear();
   });
 
+  it('should throw an error if the provided logHandler is not a valid LogHandler', () => {
+    expect(() => createLogger({
+      level: INFO,
+      logHandler: {} as any,
+    })).toThrow('Invalid log handler');
+
+    expect(() => createLogger({
+      level: INFO,
+      logHandler: { log: 'abc' } as any,
+    })).toThrow('Invalid log handler');
+
+    expect(() => createLogger({
+      level: INFO,
+      logHandler: 'abc' as any,
+    })).toThrow('Invalid log handler');
+  });
+
+  it('should throw an error if the level is not a valid level preset', () => {
+    expect(() => createLogger({
+      level: null as any,
+    })).toThrow('Invalid level preset');
+
+    expect(() => createLogger({
+      level: undefined as any,
+    })).toThrow('Invalid level preset');
+
+    expect(() => createLogger({
+      level: 'abc' as any,
+    })).toThrow('Invalid level preset');
+
+    expect(() => createLogger({
+      level: 123 as any,
+    })).toThrow('Invalid level preset');
+
+    expect(() => createLogger({
+      level: {} as any,
+    })).toThrow('Invalid level preset');
+  });
+
   it('should use the passed in options and a default name Optimizely', () => {
     const mockLogHandler = { log: vi.fn() };
 
     const logger = extractLogger(createLogger({
-      level: InfoLog,
+      level: INFO,
       logHandler: mockLogHandler,
     }));
 
@@ -56,7 +95,7 @@ describe('create', () => {
 
   it('should use a ConsoleLogHandler if no logHandler is provided', () => {
     const logger = extractLogger(createLogger({
-      level: InfoLog,
+      level: INFO,
     }));
 
     expect(logger).toBe(MockedOptimizelyLogger.mock.instances[0]);

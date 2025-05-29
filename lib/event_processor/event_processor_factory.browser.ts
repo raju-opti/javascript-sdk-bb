@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import { getForwardingEventProcessor } from './forwarding_event_processor';
 import { EventDispatcher } from './event_dispatcher/event_dispatcher';
 import { EventProcessor } from './event_processor';
 import { EventWithId } from './batch_event_processor';
@@ -23,11 +21,12 @@ import {
   BatchEventProcessorOptions,
   OpaqueEventProcessor,
   wrapEventProcessor,
+  getForwardingEventProcessor,
 } from './event_processor_factory';
 import defaultEventDispatcher from './event_dispatcher/default_dispatcher.browser';
 import sendBeaconEventDispatcher from './event_dispatcher/send_beacon_dispatcher.browser';
 import { LocalStorageCache } from '../utils/cache/local_storage_cache.browser';
-import { SyncPrefixCache } from '../utils/cache/cache';
+import { SyncPrefixStore } from '../utils/cache/store';
 import { EVENT_STORE_PREFIX, FAILED_EVENT_RETRY_INTERVAL } from './event_processor_factory';
 
 export const DEFAULT_EVENT_BATCH_SIZE = 10;
@@ -45,7 +44,7 @@ export const createBatchEventProcessor = (
   options: BatchEventProcessorOptions = {}
 ): OpaqueEventProcessor => {
   const localStorageCache = new LocalStorageCache<EventWithId>();
-  const eventStore = new SyncPrefixCache<EventWithId, EventWithId>(
+  const eventStore = new SyncPrefixStore<EventWithId, EventWithId>(
     localStorageCache, EVENT_STORE_PREFIX,
     identity,
     identity,

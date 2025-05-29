@@ -28,7 +28,7 @@ import { BrowserRequestHandler } from './utils/http_request_handler/request_hand
  * @return {Client|null} the Optimizely client object
  *                           null on error
  */
-export const createInstance = function(config: Config): Client | null {
+export const createInstance = function(config: Config): Client {
   const rnConfig = {
     ...config,
     clientEngine: config.clientEngine || REACT_NATIVE_JS_CLIENT_ENGINE,
@@ -38,8 +38,8 @@ export const createInstance = function(config: Config): Client | null {
   return getOptimizelyInstance(rnConfig);
 };
 
-export const getSendBeaconEventDispatcher = function(): EventDispatcher {
-  throw new Error('Send beacon event dispatcher is not supported in React Native');
+export const getSendBeaconEventDispatcher = function(): EventDispatcher | undefined {
+  return undefined;
 };
 
 export { default as eventDispatcher } from './event_processor/event_dispatcher/default_dispatcher.browser';

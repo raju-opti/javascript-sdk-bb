@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getForwardingEventProcessor } from './forwarding_event_processor';
 import { EventDispatcher } from './event_dispatcher/event_dispatcher';
 import defaultEventDispatcher from './event_dispatcher/default_dispatcher.node';
 import { 
@@ -23,6 +22,7 @@ import {
   getPrefixEventStore,
   OpaqueEventProcessor,
   wrapEventProcessor,
+  getForwardingEventProcessor,
 } from './event_processor_factory';
 
 export const DEFAULT_EVENT_BATCH_SIZE = 10;
@@ -47,7 +47,8 @@ export const createBatchEventProcessor = (
     defaultFlushInterval: DEFAULT_EVENT_FLUSH_INTERVAL,
     defaultBatchSize: DEFAULT_EVENT_BATCH_SIZE,
     retryOptions: {
-      maxRetries: 10,
+      maxRetries: 5,
+    
     },
     failedEventRetryInterval: eventStore ? FAILED_EVENT_RETRY_INTERVAL : undefined,
     eventStore,

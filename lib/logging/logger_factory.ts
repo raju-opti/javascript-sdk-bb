@@ -15,6 +15,10 @@
  */
 import { ConsoleLogHandler, LogHandler, LogLevel, OptimizelyLogger } from './logger';
 import { errorResolver, infoResolver, MessageResolver } from '../message/message_resolver';
+import { Maybe } from '../utils/type';
+
+export const INVALID_LOG_HANDLER = 'Invalid log handler';
+export const INVALID_LEVEL_PRESET = 'Invalid level preset';
 
 type LevelPreset = {
   level: LogLevel,
@@ -50,23 +54,26 @@ export type OpaqueLevelPreset = {
   [levelPresetSymbol]: unknown;
 };
 
-export const DebugLog: OpaqueLevelPreset = {
+export const DEBUG: OpaqueLevelPreset = {
   [levelPresetSymbol]: debugPreset,
 };
 
-export const InfoLog: OpaqueLevelPreset = {
+export const INFO: OpaqueLevelPreset = {
   [levelPresetSymbol]: infoPreset,
 };
 
-export const WarnLog: OpaqueLevelPreset = {
+export const WARN: OpaqueLevelPreset = {
   [levelPresetSymbol]: warnPreset,
 };
 
-export const ErrorLog: OpaqueLevelPreset = {
+export const ERROR: OpaqueLevelPreset = {
   [levelPresetSymbol]: errorPreset,
 };
 
 export const extractLevelPreset = (preset: OpaqueLevelPreset): LevelPreset => {
+  if (!preset || typeof preset !== 'object' || !preset[levelPresetSymbol]) {
+    throw new Error(INVALID_LEVEL_PRESET);
+  }
   return preset[levelPresetSymbol] as LevelPreset;
 }
 
@@ -81,8 +88,18 @@ export type LoggerConfig = {
   logHandler?: LogHandler,
 };
 
+const validateLogHandler = (logHandler: any) => {
+  if (typeof logHandler !== 'object' || typeof logHandler.log !== 'function') {
+    throw new Error(INVALID_LOG_HANDLER);
+  }
+}
+
 export const createLogger = (config: LoggerConfig): OpaqueLogger => {
   const { level, infoResolver, errorResolver } = extractLevelPreset(config.level);
+
+  if (config.logHandler) {
+    validateLogHandler(config.logHandler);
+  }
   
   const loggerName = 'Optimizely';
 
@@ -103,7 +120,10 @@ export const wrapLogger = (logger: OptimizelyLogger): OpaqueLogger => {
   };
 };
 
-export const extractLogger = (logger: OpaqueLogger): OptimizelyLogger => {
-  return logger[loggerSymbol] as OptimizelyLogger;
-};
+export const extractLogger = (logger: Maybe<OpaqueLogger>): Maybe<OptimizelyLogger> => {
+  if (!logger || typeof logger !== 'object') {
+    return undefined;
+  }
 
+  return logger[loggerSymbol] as Maybe<OptimizelyLogger>;
+};
